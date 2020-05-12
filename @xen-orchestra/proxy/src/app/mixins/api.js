@@ -65,11 +65,13 @@ export default class Api {
         return
       }
 
+      const isObject = result !== null && typeof result === 'object'
       const isAsyncIterable =
-        result !== null &&
-        typeof result === 'object' &&
+        isObject &&
         (typeof result[Symbol.iterator] === 'function' ||
           typeof result[Symbol.asyncIterator] === 'function')
+      const isStream = isObject && typeof result.pipe === 'function'
+      ctx.body = isAsyncIterable ? ndJsonStream(body.id, result) :
       if (isAsyncIterable) {
         ctx.body = ndJsonStream(body.id, result)
       } else {

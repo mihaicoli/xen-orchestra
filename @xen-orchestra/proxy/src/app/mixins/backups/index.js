@@ -30,6 +30,48 @@ export default class Backups {
         },
       })
 
+    const run = async ({ xapis: xapisOptions, ...rest }) => {
+      const xapis = []
+      async function createConnectedXapi(id) {
+        const xapi = createXapi(xapisOptions[id])
+        xapis.push(xapi)
+        await xapi.connect()
+        await xapi.objectsFetched
+        return xapi
+      }
+      async function disconnectAllXapis() {
+        const promises = xapis.map(xapi => xapi.disconnect())
+        xapis.length = 0
+        await Promise.all(promises)
+      }
+      app.hooks.on('stop', disconnectAllXapis)
+
+      const connectedXapis = { __proto__: null }
+      function getConnectedXapi(id) {
+        let connectedXapi = connectedXapis[id]
+        if (connectedXapi === undefined) {
+          connectedXapi = createConnectedXapi(id)
+          connectedXapis[id] = connectedXapi
+        }
+        return connectedXapi
+      }
+
+      try {
+        await new Backup({
+          ...rest,
+          config,
+          getConnectedXapi,
+        }).run()
+      } finally {
+        app.hooks.removeListener('stop', disconnectAllXapis)
+        ignoreErrors.call(disconnectAllXapis())
+      }
+    }
+
+    const runWithLogs = async function*(args) {
+      const logs = []
+    }
+
     app.api.addMethods({
       backup: {
         importVmBackup: [
@@ -111,43 +153,8 @@ export default class Backups {
           },
         ],
         run: [
-          async ({ xapis: xapisOptions, ...rest }) => {
-            const xapis = []
-            async function createConnectedXapi(id) {
-              const xapi = createXapi(xapisOptions[id])
-              xapis.push(xapi)
-              await xapi.connect()
-              await xapi.objectsFetched
-              return xapi
-            }
-            async function disconnectAllXapis() {
-              const promises = xapis.map(xapi => xapi.disconnect())
-              xapis.length = 0
-              await Promise.all(promises)
-            }
-            app.hooks.on('stop', disconnectAllXapis)
-
-            const connectedXapis = { __proto__: null }
-            function getConnectedXapi(id) {
-              let connectedXapi = connectedXapis[id]
-              if (connectedXapi === undefined) {
-                connectedXapi = createConnectedXapi(id)
-                connectedXapis[id] = connectedXapi
-              }
-              return connectedXapi
-            }
-
-            try {
-              await new Backup({
-                ...rest,
-                config,
-                getConnectedXapi,
-              }).run()
-            } finally {
-              app.hooks.removeListener('stop', disconnectAllXapis)
-              ignoreErrors.call(disconnectAllXapis())
-            }
-          },
+          ({ streamLogs = false, ...rest }) =>
+            streamLogs ? runWithLogs(rest) : run(rest),
           {
             description: 'run a backup job',
             params: {
@@ -156,6 +163,7 @@ export default class Backups {
               schedule: { type: 'object' },
               xapis: { type: 'object' },
               recordToXapi: { type: 'object' },
+              streamLogs: { type: 'boolean' },
             },
           },
         ],

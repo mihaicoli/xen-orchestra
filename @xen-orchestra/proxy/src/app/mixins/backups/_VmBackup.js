@@ -39,7 +39,7 @@ export class VmBackup {
     schedule,
     settings,
     srs,
-    vm,
+    vm: vmUuid,
   }) {
     assert.strictEqual(job.mode, 'full')
 
@@ -50,7 +50,7 @@ export class VmBackup {
     this.sourceVm = undefined
     this.srs = srs
     this.timestamp = undefined
-    this.vm = vm
+    this.vm = vmUuid
 
     this._getSnapshotNameLabel = getSnapshotNameLabel
     this._isDelta = false
