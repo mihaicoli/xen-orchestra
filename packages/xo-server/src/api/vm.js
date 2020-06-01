@@ -727,7 +727,7 @@ clone.params = {
 }
 
 clone.resolve = {
-  vm: ['id', ['VM', 'VM-snapshot'], 'administrate'],
+  vm: ['id', ['VM', 'VM-snapshot', 'VM-template'], 'administrate'],
 }
 
 // -------------------------------------------------------------------
@@ -768,7 +768,7 @@ copy.params = {
 }
 
 copy.resolve = {
-  vm: ['vm', ['VM', 'VM-snapshot'], 'administrate'],
+  vm: ['vm', ['VM', 'VM-snapshot', 'VM-template'], 'administrate'],
   sr: ['sr', 'SR', 'operate'],
 }
 
