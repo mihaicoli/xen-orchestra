@@ -7,6 +7,9 @@
 
 > Users must be able to say: “Nice enhancement, I'm eager to test it”
 
+- [Home/Template] Ability to copy/clone VM templates [#4734](https://github.com/vatesfr/xen-orchestra/issues/4734) (PR [#5006](https://github.com/vatesfr/xen-orchestra/pull/5006/commits/f9feb0d085a98da8f0237f98cd72975b5e29ce24))
+- [VM/bulk copy] Add fast clone option (PR [#5006](https://github.com/vatesfr/xen-orchestra/pull/5006/commits/8bd86de6cf41f9fb1d6307dfa21aeb8b78d5c43d))
+
 ### Bug fixes
 
 > Users must be able to say: “I had this issue, happy to know it's fixed”
