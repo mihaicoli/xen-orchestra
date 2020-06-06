@@ -369,7 +369,7 @@ const messages = {
   allJobCalls: 'All',
   job: 'Job',
   jobModalTitle: 'Job {job}',
-  jobId: 'ID',
+  id: 'ID',
   jobType: 'Type',
   jobName: 'Name',
   jobModes: 'Modes',
@@ -1318,6 +1318,10 @@ const messages = {
   metricsLoading: 'Loading…',
 
   // ----- Health -----
+  detachedBackups: 'Detached backups',
+  noDetachedBackups: 'No backups',
+  jobId: 'Job ID',
+  reason: 'Reason',
   orphanedVdis: 'Orphaned snapshot VDIs',
   orphanedVms: 'Orphaned VMs snapshot',
   noOrphanedObject: 'No orphans',

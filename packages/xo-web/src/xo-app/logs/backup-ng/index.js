@@ -51,7 +51,7 @@ export const LogStatus = ({ log, tooltip = _('logDisplayDetails') }) => {
 
 const COLUMNS = [
   {
-    name: _('jobId'),
+    name: _('id'),
     itemRenderer: log => log.jobId.slice(4, 8),
     sortCriteria: log => log.jobId,
   },

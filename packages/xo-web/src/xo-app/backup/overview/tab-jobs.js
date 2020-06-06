@@ -227,7 +227,7 @@ class JobsTable extends React.Component {
             {id.slice(4, 8)}
           </Copiable>
         ),
-        name: _('jobId'),
+        name: _('id'),
       },
       {
         valuePath: 'name',

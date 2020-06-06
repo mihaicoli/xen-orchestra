@@ -48,7 +48,7 @@ const _runJob = ({ jobLabel, jobId, scheduleTag }) =>
 
 const JOB_COLUMNS = [
   {
-    name: _('jobId'),
+    name: _('id'),
     itemRenderer: ({ jobId }) => jobId.slice(4, 8),
     sortCriteria: 'jobId',
   },

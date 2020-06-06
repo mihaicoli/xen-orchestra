@@ -1,5 +1,7 @@
 import _ from 'intl'
 import Component from 'base-component'
+import constructQueryString from 'construct-query-string'
+import Copiable from 'copiable'
 import Icon from 'icon'
 import Link from 'link'
 import NoObjects from 'no-objects'
@@ -9,9 +11,48 @@ import SortedTable from 'sorted-table'
 import { addSubscriptions, connectStore } from 'utils'
 import { Card, CardHeader, CardBlock } from 'card'
 import { Container, Row, Col } from 'grid'
-import { createGetLoneSnapshots, createGetObjectsOfType } from 'selectors'
-import { deleteSnapshot, deleteSnapshots, subscribeSchedules } from 'xo'
+import { createPredicate } from 'value-matcher'
+import {
+  createGetLoneSnapshots,
+  createGetObjectsOfType,
+  createSelector,
+} from 'selectors'
+import {
+  deleteBackupJobs,
+  deleteBackups,
+  deleteSnapshot,
+  deleteSnapshots,
+  listVmBackups,
+  subscribeBackupNgJobs,
+  subscribeRemotes,
+  subscribeSchedules,
+} from 'xo'
+import {
+  filter,
+  flatMap,
+  forEach,
+  keyBy,
+  groupBy,
+  map,
+  omit,
+  toArray,
+} from 'lodash'
 import { FormattedRelative, FormattedTime } from 'react-intl'
+
+const DETACHED_BACKUP_COLUMNS = [
+  {
+    name: _('jobId'),
+    itemRenderer: ({ jobId }) => (
+      <Copiable data={jobId} tagName='p'>
+        {jobId.slice(4, 8)}
+      </Copiable>
+    ),
+  },
+  {
+    name: _('reason'),
+    itemRenderer: backup => backup.reason,
+  },
+]
 
 const SNAPSHOT_COLUMNS = [
   {
@@ -66,9 +107,49 @@ const ACTIONS = [
   },
 ]
 
+const _deleteBackupJobs = items => {
+  const { backup: backupIds, metadataBackup: metadataBackupIds } = groupBy(
+    items,
+    'type'
+  )
+  return deleteBackupJobs({ backupIds, metadataBackupIds })
+}
+
+const DETACHED_BACKUP_ACTIONS = [
+  {
+    handler: backups => deleteBackups(flatMap(backups, 'backups')),
+    icon: 'delete',
+    label: _('deleteVmBackups'),
+    level: 'danger',
+  },
+]
+
+const INDIVIDUAL_ACTIONS = [
+  {
+    handler: (job, { goTo }) =>
+      goTo({
+        pathname: '/home',
+        query: { t: 'VM', s: constructQueryString(job.vms) },
+      }),
+    label: _('redirectToMatchingVms'),
+    icon: 'preview',
+  },
+  {
+    handler: (job, { goToNewTab }) => goToNewTab(`/backup/${job.id}/edit`),
+    label: _('formEdit'),
+    icon: 'edit',
+    level: 'primary',
+  },
+]
+
 @addSubscriptions({
   // used by createGetLoneSnapshots
   schedules: subscribeSchedules,
+  jobs: cb =>
+    subscribeBackupNgJobs(jobs => {
+      cb(keyBy(jobs, 'id'))
+    }),
+  remotes: subscribeRemotes,
 })
 @connectStore({
   loneSnapshots: createGetLoneSnapshots,
@@ -83,9 +164,86 @@ const ACTIONS = [
   vms: createGetObjectsOfType('VM'),
 })
 export default class Health extends Component {
+  _getDetachedBackups = createSelector(
+    () => this.props.jobs,
+    () => this.props.vms,
+    () => this.props.remotes,
+    createSelector(
+      () => this.props.schedules,
+      schedules => groupBy(schedules, 'jobId')
+    ),
+    async (jobs, vms, remotes, schedulesByJob) => {
+      const backupsByRemote = await listVmBackups(toArray(remotes))
+      const detachedBackups = []
+      forEach(backupsByRemote, backups => {
+        detachedBackups.push(
+          ...flatMap(backups, (vmBackups, vmId) => {
+            if (vms[vmId] === undefined) {
+              return map(vmBackups, backup => ({
+                ...backup,
+                reason: 'Missing VM',
+              }))
+            }
+
+            forEach(vmBackups, backup => {
+              const job = jobs[backup.jobId]
+              if (job === undefined) {
+                return {
+                  ...backup,
+                  reason: 'Missing job',
+                }
+              }
+
+              if (
+                filter(vms, createPredicate(omit(job.vms, 'power_state')))
+                  .length === 0
+              ) {
+                return {
+                  ...backup,
+                  reason: 'No VMs match to this job',
+                }
+              }
+            })
+          })
+        )
+      })
+      return detachedBackups
+    }
+  )
+
+  _goTo = path => {
+    this.context.router.push(path)
+  }
+
+  _goToNewTab = path => {
+    window.open(this.context.router.createHref(path))
+  }
+
   render() {
     return (
       <Container>
+        <Row className='detached-backups'>
+          <Col>
+            <Card>
+              <CardHeader>
+                <Icon icon='backup' /> {_('detachedBackups')}
+              </CardHeader>
+              <CardBlock>
+                <NoObjects
+                  actions={DETACHED_BACKUP_ACTIONS}
+                  collection={this._getDetachedBackups()}
+                  columns={DETACHED_BACKUP_COLUMNS}
+                  component={SortedTable}
+                  data-goTo={this._goTo}
+                  data-goToNewTab={this._goToNewTab}
+                  emptyMessage={_('noDetachedBackups')}
+                  shortcutsTarget='.detached-backups'
+                  stateUrlParam='s_detached_backups'
+                />
+              </CardBlock>
+            </Card>
+          </Col>
+        </Row>
         <Row className='lone-snapshots'>
           <Col>
             <Card>

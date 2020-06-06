@@ -335,7 +335,7 @@ const getCallTag = log => log.calls[0].params.tag
 
 const LOG_COLUMNS = [
   {
-    name: _('jobId'),
+    name: _('id'),
     itemRenderer: log => log.jobId.slice(4, 8),
     sortCriteria: log => log.jobId,
   },
