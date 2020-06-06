@@ -6,7 +6,7 @@ import Icon from 'icon'
 import Link from 'link'
 import NoObjects from 'no-objects'
 import React from 'react'
-import renderXoItem from 'render-xo-item'
+import renderXoItem, { Vm } from 'render-xo-item'
 import SortedTable from 'sorted-table'
 import { addSubscriptions, connectStore } from 'utils'
 import { Card, CardHeader, CardBlock } from 'card'
@@ -47,6 +47,10 @@ const DETACHED_BACKUP_COLUMNS = [
         {jobId.slice(4, 8)}
       </Copiable>
     ),
+  },
+  {
+    name: _('vm'),
+    itemRenderer: ({ vmId }) => <Vm id={vmId} />,
   },
   {
     name: _('reason'),
@@ -193,14 +197,20 @@ export default class Health extends Component {
                   reason: 'Missing job',
                 }
               }
-
-              if (
-                filter(vms, createPredicate(omit(job.vms, 'power_state')))
-                  .length === 0
-              ) {
+              const filtredVmIds = filter(
+                vms,
+                createPredicate(omit(job.vms, 'power_state'))
+              ).map(_ => _.id)
+              if (filtredVmIds.length === 0) {
                 return {
                   ...backup,
                   reason: 'No VMs match to this job',
+                }
+              } else if (!filtredVmIds.includes(vmId)) {
+                return {
+                  ...backup,
+                  vmId,
+                  reason: 'VM is not part of this job',
                 }
               }
             })
